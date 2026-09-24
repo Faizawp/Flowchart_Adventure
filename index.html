@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flowchart Adventure - Mission Algorithm</title>
+    
+    <!-- Meta Tags for SEO & Social Media -->
+    <meta name="description" content="Game edukasi interaktif belajar Algoritma & Flowchart untuk Siswa SMP/Fase D.">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Emoji Favicon (Robot) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow: hidden; 
+            touch-action: none; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Reduced Motion Accessibility */
+        body.reduce-motion * {
+            animation: none !important;
+            transition: none !important;
+        }
+
+        .title-font { font-family: 'Fredoka One', cursive; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-panel); }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        /* Screen Management */
+        .screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Flowchart Node Styles */
+        .fc-node {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            cursor: grab;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+            position: relative;
+            z-index: 10;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            width: 140px;
+            height: 50px;
+            margin: 0 auto;
+        }
+
+        .fc-node:active { cursor: grabbing; }
+        .fc-node.dragging {
+            position: fixed;
+            z-index: 1000;
+            pointer-events: none;
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .fc-node.tap-selected {
+            border-color: var(--warning);
+            box-shadow: 0 0 15px var(--warning);
+            transform: scale(1.05);
+        }
+
+        /* Node Shapes */
+        .shape-start, .shape-end {
+            border-radius: 9999px; /* Pill */
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+        }
+        .shape-process {
+            border-radius: 8px; /* Rectangle */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        .shape-io {
+            border-radius: 4px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            transform: skewX(-15deg);
+        }
+        .shape-io > span {
+            transform: skewX(15deg); /* Counter skew for text */
+            display: block;
+        }
+        .shape-decision {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            /* Diamond shape via clip-path for easier text placement */
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            height: 70px;
+            width: 110px;
+            padding: 1rem;
+            font-size: 0.75rem;
+        }
+
+        /* Workspace & Blueprint */
+        .bg-blueprint {
+            background-color: #1e293b;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .workspace-slot {
+            width: 150px;
+            height: 60px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .workspace-slot.highlight {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* Connectors */
+        .connector-line {
+            width: 4px;
+            height: 30px;
+            background-color: #64748b;
+            margin: 0 auto;
+            position: relative;
+        }
+        .connector-line::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: -4px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #64748b;
+        }
+        .branch-line-h {
+            height: 4px;
+            background-color: #64748b;
+            position: absolute;
+            top: 0;
+            z-index: 0;
+        }
+        .branch-line-v {
+            width: 4px;
+            background-color: #64748b;
+            margin: 0 auto;
+            z-index: 0;
+        }
+
+        /* Map Nodes */
+        .map-node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-family: 'Fredoka One';
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            z-index: 2;
+        }
+        .map-node:hover { transform: scale(1.1); }
+        .map-node.locked { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        .map-node.unlocked { background: var(--primary); color: white; box-shadow: 0 0 15px var(--primary); }
+        .map-node.completed { background: var(--success); color: white; box-shadow: 0 0 15px var(--success); }
+        
+        .stars-container {
+            position: absolute;
+            bottom: -20px;
+            display: flex;
+            gap: 2px;
+            font-size: 0.8rem;
+        }
+
+        /* Character Simulation */
+        .sim-container {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 10px;
+            justify-content: space-around;
+        }
+        .sim-character {
+            font-size: 2.5rem;
+            position: absolute;
+            bottom: 10px;
+            left: 10%;
+            transition: left 0.5s ease-in-out, transform 0.2s;
+            z-index: 10;
+        }
+        .sim-prop {
+            font-size: 2rem;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .sim-prop.active { opacity: 1; transform: scale(1.1); }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+        
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* Confetti */
+        .confetti-piece {
+            position: fixed;
+            top: -20px;
+            width: 10px;
+            height: 20px;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Custom UI Elements */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn {
+            transition: transform 0.2s, background-color 0.2s;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- CUSTOM MODAL -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/80 z-[9999] hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 rounded-2xl max-w-sm w-full text-center transform scale-90 transition-transform duration-300" id="modal-content">
+            <div id="modal-icon" class="text-5xl mb-4"></div>
+            <h2 id="modal-title" class="text-2xl title-font mb-2">Title</h2>
+            <p id="modal-message" class="text-gray-300 mb-6 text-sm leading-relaxed">Message goes here.</p>
+            <div id="modal-actions" class="flex justify-center gap-3">
+                <button onclick="closeModal()" class="btn bg-primary hover:bg-blue-600 px-6 py-2 rounded-full shadow-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 z-[9998] hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl title-font text-white"><i class="fas fa-cog"></i> PENGATURAN</h2>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <!-- Sound Toggle -->
+                <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <div class="font-bold text-slate-200">Efek Suara (SFX)</div>
+                    <button onclick="toggleSound()" class="btn-sound text-2xl transition-transform hover:scale-110 active:scale-95">
+                        <i class="fas fa-volume-up text-blue-400"></i>
+                    </button>
+                </div>
+                
+                <!-- Motion Toggle -->
+                <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <div>
+                        <div class="font-bold text-slate-200">Kurangi Animasi</div>
+                        <div class="text-xs text-slate-400">Matikan goyangan & confetti</div>
+                    </div>
+                    <button onclick="toggleMotion()" id="btn-motion" class="w-12 h-6 rounded-full bg-slate-600 relative transition-colors">
+                        <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform" id="motion-knob"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="border-t border-red-500/30 pt-4">
+                <button onclick="resetDataWarning()" class="w-full py-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg text-sm font-bold border border-red-500/30 transition-colors">
+                    <i class="fas fa-trash-alt mr-2"></i> RESET SEMUA DATA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN: HOME -->
+    <div id="screen-home" class="screen active justify-center items-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 p-4">
+        <!-- Admin Hidden Button -->
+        <button onclick="navTo('admin')" class="absolute bottom-4 right-4 text-slate-700 hover:text-slate-500 text-xl z-50 transition-colors"><i class="fas fa-cog"></i></button>
+
+        <div class="text-center animate-pop w-full max-w-md mx-auto">
+            <div class="text-6xl mb-4 drop-shadow-lg">🤖</div>
+            <h1 class="text-4xl md:text-5xl title-font text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 drop-shadow-lg leading-tight">
+                FLOWCHART
+            </h1>
+            <h2 class="text-2xl md:text-3xl title-font text-yellow-400 tracking-widest mb-8 drop-shadow">ADVENTURE</h2>
+            <p class="text-gray-400 mb-8 px-4 text-sm md:text-base">Selesaikan misi kehidupan sehari-hari dengan menyusun algoritma yang tepat!</p>
+            
+            <div class="grid grid-cols-1 gap-3 px-4">
+                <button onclick="navTo('profile')" class="btn bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-4 px-8 rounded-full text-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] mb-2 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                    <i class="fas fa-play mr-2"></i> PLAY GAME
+                </button>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="navTo('leaderboard')" class="btn bg-slate-800 border border-slate-700 hover:bg-slate-700 py-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
+                        <i class="fas fa-trophy text-yellow-400 text-xl"></i>
+                        <span class="text-xs">Leaderboard</span>
+                    </button>
+                    <button onclick="navTo('achievements')" class="btn bg-slate-800 border border-slate-700 hover:bg-slate-700 py-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
+                        <i class="fas fa-medal text-purple-400 text-xl"></i>
+                        <span class="text-xs">Achievements</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mt-2">
+                    <button onclick="navTo('how-to')" class="btn bg-slate-800 border border-slate-600 hover:bg-slate-700 py-3 rounded-xl shadow-lg text-sm">
+                        <i class="fas fa-book-open mr-2"></i> PANDUAN
+                    </button>
+                    <button onclick="openSettings()" class="btn bg-slate-800 border border-slate-600 hover:bg-slate-700 py-3 rounded-xl shadow-lg text-sm text-slate-300">
+                        <i class="fas fa-sliders-h mr-2"></i> PENGATURAN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN: PLAYER PROFILE -->
+    <div id="screen-profile" class="screen bg-slate-900 p-6 justify-center items-center">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-md animate-pop">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl title-font text-blue-400">ALGORITHM EXPLORER</h2>
+                <button onclick="navTo('home')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-2">Nama Pemain</label>
+                <input type="text" id="input-name" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Masukkan nama..." autocomplete="off">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm text-gray-400 mb-2">Kelas</label>
+                <input type="text" id="input-class" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Contoh: 8A" autocomplete="off">
+            </div>
+            <div class="mb-8">
+                <label class="block text-sm text-gray-400 mb-2">Pilih Avatar</label>
+                <div class="flex justify-between gap-2 flex-wrap" id="avatar-selection">
+                    <!-- Avatars generated by JS -->
+                </div>
+            </div>
+            
+            <button onclick="saveProfile()" class="btn w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl shadow-lg">
+                MULAI PETUALANGAN <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN: WORLD MAP -->
+    <div id="screen-map" class="screen bg-slate-900 flex-col">
+        <!-- Map Header -->
+        <div class="glass-panel p-4 flex justify-between items-center z-10 sticky top-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <div id="map-avatar" class="text-3xl bg-slate-700 w-12 h-12 rounded-full flex items-center justify-center border-2 border-slate-500">👦</div>
+                <div>
+                    <div id="map-player-name" class="font-bold text-lg leading-tight">Player</div>
+                    <div class="text-xs text-yellow-400 font-bold"><i class="fas fa-star"></i> <span id="map-total-stars">0</span> Stars</div>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button onclick="toggleSound()" class="btn-sound text-xl transition-transform active:scale-95"><i class="fas fa-volume-up text-blue-400"></i></button>
+                <button onclick="navTo('home')" class="text-slate-400 hover:text-white text-2xl transition-transform active:scale-95"><i class="fas fa-home"></i></button>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="flex-1 overflow-y-auto p-4 relative" id="map-container">
+            <!-- Nodes will be injected here by JS -->
+            <div id="map-nodes" class="flex flex-col items-center gap-8 pb-24 relative">
+                <!-- SVG Path connecting nodes -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none z-0" id="map-path-svg"></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN: LEVEL / GAMEPLAY -->
+    <div id="screen-level" class="screen bg-slate-900 flex-col">
+        <!-- Top HUD -->
+        <div class="glass-panel px-4 py-3 flex justify-between items-center text-sm shadow-md z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="confirmExitLevel()" class="text-slate-400 hover:text-white text-xl transition-transform active:scale-90"><i class="fas fa-arrow-left"></i></button>
+                <div>
+                    <div class="font-bold text-blue-400 truncate max-w-[150px] md:max-w-[300px]" id="lvl-title">LVL 1: Wake Up!</div>
+                    <div class="text-xs text-slate-400">Score: <span id="lvl-score" class="text-white font-mono">0</span></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-red-400 text-lg flex gap-1 drop-shadow-md" id="lvl-lives">
+                    <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+                </div>
+                <div class="font-mono bg-slate-800 px-3 py-1 rounded-md border border-slate-700 flex items-center gap-2 text-yellow-400 shadow-inner">
+                    <i class="fas fa-stopwatch"></i> <span id="lvl-timer">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+            
+            <!-- Main Workspace (Center) -->
+            <div class="flex-1 flex flex-col bg-slate-800 relative z-0">
+                <!-- Simulation Area -->
+                <div class="h-[25vh] md:h-1/3 min-h-[120px] bg-slate-950 border-b border-slate-700 p-2 flex flex-col justify-end relative overflow-hidden shadow-inner">
+                    <div class="absolute top-2 left-4 text-xs text-slate-500 uppercase tracking-wider font-bold"><i class="fas fa-desktop"></i> Simulation</div>
+                    <div class="sim-container" id="sim-area">
+                        <!-- Props and Character injected here -->
+                    </div>
+                </div>
+
+                <!-- Flowchart Drop Zone (Blueprint background) -->
+                <div class="flex-1 overflow-y-auto p-4 md:p-8 relative bg-blueprint" id="workspace-scroll-area">
+                    <div class="absolute top-2 left-4 text-xs text-blue-400/50 uppercase tracking-wider font-bold"><i class="fas fa-drafting-compass"></i> Workspace</div>
+                    
+                    <!-- Sequence Slots Container -->
+                    <div id="slots-container" class="flex flex-col items-center pt-8 pb-24">
+                        <!-- Slots generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Action Bar (Bottom) -->
+                <div class="h-[70px] glass-panel flex justify-between items-center px-4 z-20 pb-safe">
+                    <div class="flex gap-2">
+                        <button onclick="useHint()" class="bg-yellow-600 hover:bg-yellow-500 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90" title="Gunakan Hint (-10 Poin)">
+                            <i class="fas fa-lightbulb text-xl text-white"></i>
+                        </button>
+                        <button onclick="resetWorkspace()" class="bg-slate-600 hover:bg-slate-500 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90" title="Reset Board">
+                            <i class="fas fa-undo text-xl text-white"></i>
+                        </button>
+                    </div>
+                    <button onclick="runAlgorithm()" id="btn-run" class="btn bg-green-500 hover:bg-green-400 text-white px-6 md:px-8 py-3 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] text-base md:text-lg flex items-center gap-2">
+                        <i class="fas fa-play"></i> RUN ALGORITHM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Inventory (Right on desktop, Bottom overlapping on mobile) -->
+            <div class="w-full md:w-72 glass-panel border-t md:border-t-0 md:border-l border-slate-700 flex flex-col z-30 h-[28vh] md:h-auto shadow-[-5px_0_15px_rgba(0,0,0,0.3)]">
+                <div class="p-3 border-b border-slate-700 text-sm font-bold text-blue-400 flex justify-between items-center bg-slate-800">
+                    <span><i class="fas fa-layer-group mr-2"></i> Flowchart Cards</span>
+                    <button id="toggle-cards-btn" class="md:hidden text-slate-400" onclick="toggleCardsMobile()"><i class="fas fa-chevron-down"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 flex flex-wrap md:flex-col gap-3 justify-center md:justify-start items-center bg-slate-900/50" id="card-inventory">
+                    <!-- Draggable Cards injected here -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCREEN: HOW TO PLAY -->
+    <div id="screen-how-to" class="screen bg-slate-900 p-6 flex-col">
+        <div class="glass-panel p-4 flex justify-between items-center mb-4 rounded-xl shadow-md">
+            <h2 class="text-xl title-font text-blue-400"><i class="fas fa-book"></i> PANDUAN AKADEMI</h2>
+            <button onclick="navTo('home')" class="text-slate-400 hover:text-white text-xl transition-transform active:scale-90"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto glass-panel p-6 rounded-xl space-y-8 bg-slate-900/50">
+            
+            <div class="text-center">
+                <h3 class="font-bold text-2xl text-white mb-2">Selamat datang, Explorer! 👋</h3>
+                <p class="text-slate-300 text-sm">Flowchart (Diagram Alir) adalah cara kita mengajari komputer langkah demi langkah untuk menyelesaikan suatu masalah secara berurutan.</p>
+            </div>
+
+            <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 shadow-inner">
+                <h3 class="font-bold text-yellow-400 mb-4 text-center tracking-widest text-sm"><i class="fas fa-shapes mr-1"></i> KAMUS SIMBOL FLOWCHART</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Terminal -->
+                    <div class="flex flex-col items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                        <div class="w-24 h-10 shape-start flex items-center justify-center text-xs font-bold text-white shadow-lg mb-3">START/END</div>
+                        <div class="text-center">
+                            <h4 class="font-bold text-red-400 text-sm">Terminal (Oval)</h4>
+                            <p class="text-xs text-slate-400 mt-1">Digunakan HANYA untuk titik AWAL (Start) dan titik AKHIR (End) sebuah program.</p>
+                        </div>
+                    </div>
+                    <!-- Process -->
+                    <div class="flex flex-col items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                        <div class="w-24 h-10 shape-process flex items-center justify-center text-xs font-bold text-white shadow-lg mb-3">Mandi</div>
+                        <div class="text-center">
+                            <h4 class="font-bold text-blue-400 text-sm">Process (Persegi Panjang)</h4>
+                            <p class="text-xs text-slate-400 mt-1">Digunakan untuk sebuah aksi, pekerjaan, atau perhitungan yang dilakukan karakter.</p>
+                        </div>
+                    </div>
+                    <!-- Input/Output -->
+                    <div class="flex flex-col items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                        <div class="w-24 h-10 shape-io flex items-center justify-center text-xs font-bold text-white shadow-lg mb-3"><span>Lihat Jadwal</span></div>
+                        <div class="text-center">
+                            <h4 class="font-bold text-purple-400 text-sm">Input/Output (Jajar Genjang)</h4>
+                            <p class="text-xs text-slate-400 mt-1">Saat karakter menerima informasi/barang (Input) atau memberikan sesuatu (Output).</p>
+                        </div>
+                    </div>
+                    <!-- Decision -->
+                    <div class="flex flex-col items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                        <div class="w-28 h-16 shape-decision flex items-center justify-center text-xs font-bold text-white shadow-lg mb-3 leading-tight">Hujan?</div>
+                        <div class="text-center">
+                            <h4 class="font-bold text-yellow-400 text-sm">Decision (Belah Ketupat)</h4>
+                            <p class="text-xs text-slate-400 mt-1">Pengecekan kondisi bersyarat. Selalu menghasilkan dua cabang jalan: <b>YA</b> dan <b>TIDAK</b>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-blue-400 mb-3 border-b border-slate-700 pb-2"><i class="fas fa-gamepad mr-2"></i> Cara Bermain</h3>
+                <ol class="list-decimal pl-5 text-sm text-slate-300 space-y-3">
+                    <li><b class="text-white">Baca Misi:</b> Pahami tujuan karakter di bagian atas layar.</li>
+                    <li><b class="text-white">Tarik & Letakkan (Drag & Drop):</b> Tarik kartu Flowchart dari panel ke area slot putus-putus (*Workspace*).</li>
+                    <li><b class="text-white">Gunakan Tap (Alternatif):</b> Di HP, Anda juga bisa men-tap/klik kartu sekali, lalu tap slot kosong untuk memindahkannya.</li>
+                    <li><b class="text-white">Uji Logika:</b> Tekan tombol hijau <span class="text-green-400 font-bold border border-green-500/50 bg-green-900/30 px-2 py-0.5 rounded">RUN ALGORITHM</span>. Perhatikan simulasi karakter!</li>
+                    <li><b class="text-white">Debugging:</b> Jika error (karakter kebingungan), baca pesan bantuan (feedback) dan perbaiki letak kartu Anda.</li>
+                </ol>
+            </div>
+            
+            <div class="text-center mt-6">
+                <button onclick="navTo('home')" class="btn bg-blue-600 hover:bg-blue-500 py-3 px-8 rounded-full text-white shadow-lg">MENGERTI, AYO MAIN!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN: LEADERBOARD -->
+    <div id="screen-leaderboard" class="screen bg-slate-900 p-6 flex-col">
+        <div class="glass-panel p-4 flex justify-between items-center mb-4 rounded-xl">
+            <h2 class="text-xl title-font text-yellow-400"><i class="fas fa-trophy"></i> LEADERBOARD</h2>
+            <button onclick="navTo('home')" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto glass-panel p-4 rounded-xl">
+            <div id="leaderboard-list" class="flex flex-col gap-2">
+                <div class="text-center text-slate-400 py-10"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Loading Ranks...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN: ACHIEVEMENTS -->
+    <div id="screen-achievements" class="screen bg-slate-900 p-6 flex-col">
+        <div class="glass-panel p-4 flex justify-between items-center mb-4 rounded-xl">
+            <h2 class="text-xl title-font text-purple-400"><i class="fas fa-medal"></i> ACHIEVEMENTS</h2>
+            <button onclick="navTo('home')" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto glass-panel p-4 rounded-xl">
+            <div class="text-center mb-4 text-slate-300">
+                Total: <span id="achievements-count" class="font-bold text-white">0</span> / <span id="achievements-total">0</span>
+            </div>
+            <div id="achievements-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </div>
+
+    <!-- SCREEN: ADMIN -->
+    <div id="screen-admin" class="screen bg-slate-900 p-6 flex-col">
+        <div class="glass-panel p-4 flex justify-between items-center mb-4 rounded-xl border-blue-500/30 border">
+            <h2 class="text-xl title-font text-blue-400"><i class="fas fa-chalkboard-teacher"></i> TEACHER DASHBOARD</h2>
+            <button onclick="navTo('home')" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto space-y-4">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-xl text-center border border-slate-700">
+                    <div class="text-slate-400 text-xs mb-1">Nama Siswa</div>
+                    <div class="font-bold text-white truncate" id="admin-stat-name">-</div>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border border-slate-700">
+                    <div class="text-slate-400 text-xs mb-1">Total Skor</div>
+                    <div class="font-bold text-green-400 font-mono" id="admin-stat-score">0</div>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border border-slate-700">
+                    <div class="text-slate-400 text-xs mb-1">Level Selesai</div>
+                    <div class="font-bold text-blue-400 font-mono" id="admin-stat-levels">0/25</div>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border border-slate-700">
+                    <div class="text-slate-400 text-xs mb-1">Pencapaian</div>
+                    <div class="font-bold text-yellow-400 font-mono" id="admin-stat-ach">0/7</div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="glass-panel p-4 rounded-xl border border-slate-700 bg-slate-800">
+                <h3 class="text-white font-bold mb-3 flex items-center gap-2"><i class="fas fa-list-ol"></i> Progress Level</h3>
+                <div class="overflow-x-auto rounded-lg">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="text-slate-300 bg-slate-900 border-b border-slate-700">
+                            <tr>
+                                <th class="px-4 py-3">Level</th>
+                                <th class="px-4 py-3">Skor</th>
+                                <th class="px-4 py-3">Bintang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-progress-table" class="text-white">
+                            <!-- Rows akan disuntikkan via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bottom -->
+        <div class="mt-4 flex flex-col md:flex-row gap-4">
+            <button onclick="exportDataCSV()" class="btn flex-1 bg-green-600 hover:bg-green-500 py-3 rounded-xl text-white shadow-lg flex items-center justify-center gap-2">
+                <i class="fas fa-file-excel text-xl"></i> EXPORT DATA (CSV)
+            </button>
+            <button onclick="syncDataToDB(true)" class="btn flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-white shadow-lg flex items-center justify-center gap-2">
+                <i class="fas fa-cloud-upload-alt text-xl"></i> CLOUD SYNC
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- 1. GAME DATA & LEVELS (25 LEVELS) ---
+        const LEVEL_DATA = [
+            // ================= WORLD 1: SEQUENCE =================
+            {
+                id: 1, world: 1, title: "Bangun Tidur", type: "sequence", template: "linear",
+                concept: "Sequence (Urutan Logis)",
+                mission: "Bantu karakter memulai harinya. Susun urutan dari bangun tidur sampai siap beraktivitas.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Bangun Tidur' }, { id: 'c4', type: 'process', label: 'Mandi' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '🛏️', x: '40%' }, { slot: 'slot-2', icon: '🚿', x: '70%' }, { slot: 'slot-3', icon: '✨', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Algoritma selalu diawali dengan START.", "Hal pertama di pagi hari adalah Bangun Tidur."]
+            },
+            {
+                id: 2, world: 1, title: "Membersihkan Kamar", type: "sequence", template: "linear",
+                concept: "Sequence (Urutan Logis)",
+                mission: "Kamar berantakan! Rapikan kasur lalu sapu lantai.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Rapikan Kasur' }, { id: 'c4', type: 'process', label: 'Sapu Lantai' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '🛏️', x: '40%' }, { slot: 'slot-2', icon: '🧹', x: '70%' }, { slot: 'slot-3', icon: '✨', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Biasanya kita merapikan tempat tidur dulu sebelum menyapu kotoran di lantai."]
+            },
+            {
+                id: 3, world: 1, title: "Siapkan Tas", type: "sequence", template: "linear",
+                concept: "Sequence (Urutan Logis)",
+                mission: "Persiapkan peralatan sekolah sebelum berangkat.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Ambil Tas' }, { id: 'c4', type: 'process', label: 'Masukkan Buku' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '🎒', x: '45%' }, { slot: 'slot-2', icon: '📚', x: '75%' }, { slot: 'slot-3', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Ambil tas terlebih dahulu sebelum mengisinya."]
+            },
+            {
+                id: 4, world: 1, title: "Membuat Sarapan", type: "sequence", template: "linear",
+                concept: "Sequence (Urutan Logis)",
+                mission: "Buat roti selai untuk sarapan pagi ini.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Siapkan Roti' }, { id: 'c4', type: 'process', label: 'Oles Selai' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🍽️', x: '10%' }, { slot: 'slot-1', icon: '🍞', x: '40%' }, { slot: 'slot-2', icon: '🔪', x: '70%' }, { slot: 'slot-3', icon: '🥪', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Kamu tidak bisa mengoles selai jika rotinya belum disiapkan."]
+            },
+            {
+                id: 5, world: 1, title: "Bersiap ke Sekolah", type: "sequence", template: "linear",
+                concept: "Sequence (Urutan Logis)",
+                mission: "Langkah terakhir sebelum melangkah keluar rumah.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Pakai Sepatu' }, { id: 'c4', type: 'process', label: 'Pamit Orangtua' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '👟', x: '40%' }, { slot: 'slot-2', icon: '👋', x: '70%' }, { slot: 'slot-3', icon: '🏫', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Sebaiknya pakai sepatu dulu, baru pamit sebelum berangkat."]
+            },
+
+            // ================= WORLD 2: INPUT / OUTPUT =================
+            {
+                id: 6, world: 2, title: "Masuk Kelas", type: "io", template: "linear",
+                concept: "Input & Output (Penerimaan Data)",
+                mission: "Gunakan kartu INPUT (Jajar Genjang) untuk melihat jadwal sebelum masuk kelas.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'io', label: 'Input: Cek Jadwal' }, { id: 'c4', type: 'process', label: 'Masuk Ruangan' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏫', x: '10%' }, { slot: 'slot-1', icon: '📋', x: '45%' }, { slot: 'slot-2', icon: '🚪', x: '75%' }, { slot: 'slot-3', icon: '🪑', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Informasi jadwal (Input) harus diterima sebelum tahu masuk ruangan mana."]
+            },
+            {
+                id: 7, world: 2, title: "Mengumpulkan Tugas", type: "io", template: "linear",
+                concept: "Input & Output (Penerimaan Data)",
+                mission: "Setelah ambil buku, serahkan (Output) ke guru.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Ambil Buku PR' }, { id: 'c4', type: 'io', label: 'Output: Serahkan' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🪑', x: '10%' }, { slot: 'slot-1', icon: '🎒', x: '45%' }, { slot: 'slot-2', icon: '👩‍🏫', x: '75%' }, { slot: 'slot-3', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Proses mengambil buku mendahului aksi menyerahkannya."]
+            },
+            {
+                id: 8, world: 2, title: "Meminjam Buku", type: "io", template: "linear",
+                concept: "Input, Proses, Output Lengkap",
+                mission: "Perpus butuh kartu perpus! Input kartu, lalu Output terima buku.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'io', label: 'Input: Kartu' }, { id: 'c4', type: 'process', label: 'Scan' }, { id: 'c5', type: 'io', label: 'Output: Buku' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '📚', x: '10%' }, { slot: 'slot-1', icon: '💳', x: '30%' }, { slot: 'slot-2', icon: '💻', x: '55%' }, { slot: 'slot-3', icon: '📖', x: '80%' }, { slot: 'slot-4', icon: '✅', x: '95%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3', 'slot-4'],
+                hints: ["Berikan input (Kartu) agar sistem bisa memproses (Scan)."]
+            },
+            {
+                id: 9, world: 2, title: "Membeli Makanan", type: "io", template: "linear",
+                concept: "Input, Proses, Output Lengkap",
+                mission: "Pesan makanan (Input), bayar, terima makanan (Output).",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'io', label: 'Input: Pesan' }, { id: 'c4', type: 'process', label: 'Bayar' }, { id: 'c5', type: 'io', label: 'Output: Makanan' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🚶', x: '10%' }, { slot: 'slot-1', icon: '🗣️', x: '30%' }, { slot: 'slot-2', icon: '💵', x: '55%' }, { slot: 'slot-3', icon: '🍜', x: '80%' }, { slot: 'slot-4', icon: '😋', x: '95%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3', 'slot-4'],
+                hints: ["Input Pesanan -> Proses Bayar -> Output Makanan."]
+            },
+            {
+                id: 10, world: 2, title: "Pulang Sekolah", type: "io", template: "linear",
+                concept: "Trigger Event (Input)",
+                mission: "Mendengar bel adalah Input. Keluar kelas adalah Proses.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'io', label: 'Input: Suara Bel' }, { id: 'c4', type: 'process', label: 'Pulang' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🪑', x: '10%' }, { slot: 'slot-1', icon: '🔔', x: '45%' }, { slot: 'slot-2', icon: '🚶', x: '75%' }, { slot: 'slot-3', icon: '🏠', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Kita butuh input (Bel) sebagai tanda sebelum proses pulang."]
+            },
+
+            // ================= WORLD 3: DECISION (BRANCHING) =================
+            {
+                id: 11, world: 3, title: "Hujan Turun?", type: "decision", template: "branch_1",
+                concept: "Decision (Percabangan Ya/Tidak)",
+                mission: "Gunakan Decision (Belah Ketupat)! Jika hujan (YA), bawa payung. Jika tidak (TIDAK), pakai topi.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Hujan?' }, { id: 'c4', type: 'process', label: 'Bawa Payung' }, { id: 'c5', type: 'process', label: 'Pakai Topi' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '☁️', x: '35%' }, { slot: 'slot-2', icon: '☔', x: '65%' }, { slot: 'slot-4', icon: '🚶', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Hari ini Hujan (YA)",
+                hints: ["Decision selalu memiliki dua cabang keluaran. YA di kiri, TIDAK di kanan."]
+            },
+            {
+                id: 12, world: 3, title: "Bawa Payung?", type: "decision", template: "branch_1",
+                concept: "Decision (Percabangan Ya/Tidak)",
+                mission: "Apakah kamu membawa payung? Jika YA: Aman. Jika TIDAK: Lari cari teduh.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Bawa Payung?' }, { id: 'c4', type: 'process', label: 'Jalan Aman' }, { id: 'c5', type: 'process', label: 'Lari Cepat' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🚶', x: '10%' }, { slot: 'slot-1', icon: '☔', x: '35%' }, { slot: 'slot-3', icon: '🏃', x: '65%' }, { slot: 'slot-4', icon: '🏫', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-3', 'slot-4'], // Simulating NO
+                simScenarioMsg: "SIMULASI: Lupa Bawa Payung (TIDAK)",
+                hints: ["Jalur YA berarti kamu jalan aman. Jalur TIDAK berarti kamu harus lari."]
+            },
+            {
+                id: 13, world: 3, title: "Lampu Hijau?", type: "decision", template: "branch_1",
+                concept: "Decision (Percabangan Ya/Tidak)",
+                mission: "Aturan menyeberang: Jika lampu Hijau (YA) maka Jalan. Jika (TIDAK) maka Berhenti.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Lampu Hijau?' }, { id: 'c4', type: 'process', label: 'Jalan' }, { id: 'c5', type: 'process', label: 'Berhenti' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🚶', x: '10%' }, { slot: 'slot-1', icon: '🚦', x: '35%' }, { slot: 'slot-2', icon: '✅', x: '65%' }, { slot: 'slot-4', icon: '🏫', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'], // Simulating YES
+                simScenarioMsg: "SIMULASI: Lampu Lalu Lintas Hijau (YA)",
+                hints: ["Hijau berarti jalan (YA)."]
+            },
+            {
+                id: 14, world: 3, title: "Jalan Aman?", type: "decision", template: "branch_1",
+                concept: "Decision (Percabangan Ya/Tidak)",
+                mission: "Lihat kanan kiri. Jika Aman (YA) Menyeberang, jika (TIDAK) Tunggu.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Kondisi Aman?' }, { id: 'c4', type: 'process', label: 'Menyeberang' }, { id: 'c5', type: 'process', label: 'Tunggu Mobil' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '👀', x: '10%' }, { slot: 'slot-1', icon: '🚗', x: '35%' }, { slot: 'slot-3', icon: '⏳', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-3', 'slot-4'], // Simulating NO
+                simScenarioMsg: "SIMULASI: Ada Mobil Lewat (TIDAK Aman)",
+                hints: ["Jika tidak aman, tindakan yang tepat adalah Menunggu."]
+            },
+            {
+                id: 15, world: 3, title: "Telat Bangun?", type: "decision", template: "branch_1",
+                concept: "Decision (Percabangan Ya/Tidak)",
+                mission: "Jam 06:45! Jika Telat (YA) Naik Ojek, Jika (TIDAK) Jalan Kaki.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Sudah Telat?' }, { id: 'c4', type: 'process', label: 'Naik Ojek' }, { id: 'c5', type: 'process', label: 'Jalan Kaki' }
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '⏰', x: '10%' }, { slot: 'slot-1', icon: '⚠️', x: '35%' }, { slot: 'slot-2', icon: '🏍️', x: '65%' }, { slot: 'slot-4', icon: '🏫', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'], // Simulating YES
+                simScenarioMsg: "SIMULASI: Bangun Kesiangan (YA Telat)",
+                hints: ["Jalur YA berarti kamu butuh transportasi cepat."]
+            },
+
+            // ================= WORLD 4: KOMBINASI =================
+            {
+                id: 16, world: 4, title: "Isi Baterai HP", type: "combination", template: "branch_1",
+                concept: "Kombinasi Logika",
+                mission: "Cek kondisi HP kamu. Jika baterai habis (YA), maka Cas HP. Jika tidak (TIDAK), Main Game.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Baterai Habis?' }, { id: 'c4', type: 'process', label: 'Cas HP' }, { id: 'c5', type: 'process', label: 'Main Game' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '📱', x: '10%' }, { slot: 'slot-1', icon: '🔋', x: '35%' }, { slot: 'slot-2', icon: '🔌', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Baterai 5% (YA Habis)",
+                hints: ["Baterai habis berarti butuh di-cas."]
+            },
+            {
+                id: 17, world: 4, title: "Membuat Susu", type: "combination", template: "branch_1",
+                concept: "Kombinasi Logika",
+                mission: "Cek Termos. Jika Air Panas Habis (YA) Rebus Air. Jika (TIDAK) Seduh Susu.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Air Habis?' }, { id: 'c4', type: 'process', label: 'Rebus Air' }, { id: 'c5', type: 'process', label: 'Seduh Susu' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🥛', x: '10%' }, { slot: 'slot-1', icon: '🌡️', x: '35%' }, { slot: 'slot-2', icon: '🔥', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Termos Kosong (YA Air Habis)",
+                hints: ["Air yang habis harus direbus dulu."]
+            },
+            {
+                id: 18, world: 4, title: "Mengerjakan Tugas", type: "combination", template: "branch_1",
+                concept: "Kombinasi Logika",
+                mission: "Cek agenda. Ada PR? (YA) Kerjakan, (TIDAK) Nonton TV.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Ada PR?' }, { id: 'c4', type: 'process', label: 'Kerjakan PR' }, { id: 'c5', type: 'process', label: 'Nonton TV' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '📅', x: '35%' }, { slot: 'slot-3', icon: '📺', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-3', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Tidak Ada PR Hari Ini (TIDAK)",
+                hints: ["TIDAK ada PR berarti waktu bebas."]
+            },
+            {
+                id: 19, world: 4, title: "Cuci Baju", type: "combination", template: "branch_1",
+                concept: "Kombinasi Logika",
+                mission: "Apakah Baju Kotor? (YA) Cuci. (TIDAK) Lipat ke Lemari.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Baju Kotor?' }, { id: 'c4', type: 'process', label: 'Mesin Cuci' }, { id: 'c5', type: 'process', label: 'Lipat Baju' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '👕', x: '10%' }, { slot: 'slot-1', icon: '🧺', x: '35%' }, { slot: 'slot-2', icon: '🫧', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Baju Bau Keringat (YA Kotor)",
+                hints: ["Baju kotor wajib masuk ke mesin cuci."]
+            },
+            {
+                id: 20, world: 4, title: "Persiapan Ujian", type: "combination", template: "branch_1",
+                concept: "Kombinasi Logika",
+                mission: "Besok Ujian? (YA) Belajar Ekstra. (TIDAK) Tidur Cepat.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Besok Ujian?' }, { id: 'c4', type: 'process', label: 'Belajar Ekstra' }, { id: 'c5', type: 'process', label: 'Tidur Cepat' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                simProps: [{ slot: 'slot-0', icon: '🗓️', x: '10%' }, { slot: 'slot-1', icon: '📝', x: '35%' }, { slot: 'slot-2', icon: '📖', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Besok Ujian MTK (YA)",
+                hints: ["Ujian butuh persiapan belajar ekstra."]
+            },
+
+            // ================= WORLD 5: DEBUGGING =================
+            {
+                id: 21, world: 5, title: "Fix: Sarapan Terbalik", type: "debugging", template: "linear",
+                concept: "Troubleshooting & Debugging",
+                mission: "🛠️ DEBUG: Karakter memakan makanannya sebelum dimasak. Perbaiki urutannya!",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Masak Telur' }, { id: 'c4', type: 'process', label: 'Makan' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                initialMapping: { 'slot-0': 'c1', 'slot-1': 'c4', 'slot-2': 'c3', 'slot-3': 'c2' }, 
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '🍳', x: '40%' }, { slot: 'slot-2', icon: '🍽️', x: '70%' }, { slot: 'slot-3', icon: '😋', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Proses 'Masak' secara logika harus dilakukan sebelum proses 'Makan'."]
+            },
+            {
+                id: 22, world: 5, title: "Fix: Lupa Awalan", type: "debugging", template: "linear",
+                concept: "Troubleshooting & Debugging",
+                mission: "🛠️ DEBUG: Flowchart ini tidak bisa dimulai! Posisi START dan END salah tempat.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'process', label: 'Buka Buku' }, { id: 'c4', type: 'process', label: 'Membaca' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c2' },
+                initialMapping: { 'slot-0': 'c3', 'slot-1': 'c1', 'slot-2': 'c2', 'slot-3': 'c4' }, 
+                simProps: [{ slot: 'slot-0', icon: '📖', x: '10%' }, { slot: 'slot-1', icon: '👀', x: '40%' }, { slot: 'slot-2', icon: '💡', x: '70%' }, { slot: 'slot-3', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-3'],
+                hints: ["Program/Algoritma PASTI diawali START dan diakhiri END."]
+            },
+            {
+                id: 23, world: 5, title: "Fix: Salah Cabang", type: "debugging", template: "branch_1",
+                concept: "Troubleshooting & Debugging",
+                mission: "🛠️ DEBUG: Jika Haus (YA), kenapa malah Main Bola? Tukar proses di cabang YA dan TIDAK.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Haus?' }, { id: 'c4', type: 'process', label: 'Minum Air' }, { id: 'c5', type: 'process', label: 'Main Bola' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                initialMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c5', 'slot-3': 'c4', 'slot-4': 'c2' }, 
+                simProps: [{ slot: 'slot-0', icon: '🏃', x: '10%' }, { slot: 'slot-1', icon: '🥵', x: '35%' }, { slot: 'slot-2', icon: '💧', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Sangat Haus (YA)",
+                hints: ["Jalur YA seharusnya berisi solusi untuk rasa haus."]
+            },
+            {
+                id: 24, world: 5, title: "Fix: Alur Kacau", type: "debugging", template: "branch_1",
+                concept: "Troubleshooting & Debugging",
+                mission: "🛠️ DEBUG: Total kekacauan. Decision di akhir, START di tengah. Tata ulang menjadi flowchart valid!",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Kotor?' }, { id: 'c4', type: 'process', label: 'Mandi' }, { id: 'c5', type: 'process', label: 'Tidur' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                initialMapping: { 'slot-0': 'c4', 'slot-1': 'c1', 'slot-2': 'c2', 'slot-3': 'c5', 'slot-4': 'c3' }, 
+                simProps: [{ slot: 'slot-0', icon: '🏠', x: '10%' }, { slot: 'slot-1', icon: '🦠', x: '35%' }, { slot: 'slot-2', icon: '🚿', x: '65%' }, { slot: 'slot-4', icon: '✅', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Badan Kotor (YA)",
+                hints: ["Kembalikan START ke atas, END ke bawah. Lalu letakkan Decision di bawah START."]
+            },
+
+            // ================= FINAL BOSS =================
+            {
+                id: 25, world: 6, title: "🤖 CHAOS ALGORITHM", type: "debugging", template: "branch_1",
+                concept: "Ujian Akhir (Mastery)",
+                mission: "BOSS STAGE! Sistem sekolah diserang virus! Susun algoritma anti-virus untuk menyelamatkan data.",
+                cards: [
+                    { id: 'c1', type: 'start', label: 'START' }, { id: 'c2', type: 'end', label: 'END' },
+                    { id: 'c3', type: 'decision', label: 'Ada Virus?' }, { id: 'c4', type: 'process', label: 'Hapus Virus' }, { id: 'c5', type: 'process', label: 'Simpan Data' },
+                ],
+                correctMapping: { 'slot-0': 'c1', 'slot-1': 'c3', 'slot-2': 'c4', 'slot-3': 'c5', 'slot-4': 'c2' },
+                initialMapping: { 'slot-0': 'c5', 'slot-1': 'c2', 'slot-2': 'c3', 'slot-3': 'c1', 'slot-4': 'c4' }, 
+                simProps: [{ slot: 'slot-0', icon: '💻', x: '10%' }, { slot: 'slot-1', icon: '👾', x: '35%' }, { slot: 'slot-2', icon: '🛡️', x: '65%' }, { slot: 'slot-4', icon: '💾', x: '90%' }],
+                simPath: ['slot-0', 'slot-1', 'slot-2', 'slot-4'],
+                simScenarioMsg: "SIMULASI: Virus Terdeteksi! (YA)",
+                hints: ["START selalu di nomor 1. Hapus Virus jika YA, Simpan Data jika TIDAK."]
+            }
+        ];
+
+        const AVATARS = ['👦', '👧', '👨‍🚀', '👩‍🚀', '🤖', '🦊', '🐱'];
+
+        // --- CONFIG & ACHIEVEMENTS DATA ---
+        const CONFIG = {
+            API_URL: "" // Web App Google Apps Script. Kosong = Local Mode.
+        };
+
+        const ACHIEVEMENTS_DATA = [
+            { id: 'first_blood', icon: '🌟', title: 'First Mission', desc: 'Menyelesaikan level pertama.' },
+            { id: 'rookie', icon: '🏅', title: 'Algorithm Rookie', desc: 'Menyelesaikan 5 level.' },
+            { id: 'decision_master', icon: '🔀', title: 'Decision Master', desc: 'Menyelesaikan semua level di World 3.' },
+            { id: 'debugger', icon: '🛠️', title: 'Debugger', desc: 'Menyelesaikan 1 level Debugging.' },
+            { id: 'no_hint', icon: '🧠', title: 'No Hint', desc: 'Menyelesaikan 5 level tanpa hint.' },
+            { id: 'explorer', icon: '🗺️', title: 'Algorithm Explorer', desc: 'Menyelesaikan World 1 sepenuhnya.' },
+            { id: 'master', icon: '👑', title: 'Flowchart Master', desc: 'Menyelesaikan semua 25 level game.' }
+        ];
+
+        // --- 2. STATE MANAGEMENT ---
+        let state = {
+            player: { name: '', class: '', avatar: '👦', id: 'player_' + Date.now() },
+            progress: {
+                unlockedLevels: [1],
+                completedLevels: [],
+                stars: {},
+                scores: {},
+                totalScore: 0,
+                noHintCount: 0,
+                unlockedAchievements: []
+            },
+            settings: { audioEnabled: true, reducedMotion: false },
+            currentLevel: null,
+            timer: 0,
+            timerInterval: null,
+            lives: 3,
+            hintsUsed: 0,
+            dragState: { activeCard: null, offsetX: 0, offsetY: 0, tapSelectedCard: null },
+            isSimulating: false,
+            audio: { ctx: null }
+        };
+
+        const STORAGE_KEY = 'flowchart_adventure_data';
+
+        // --- 3. CORE FUNCTIONS ---
+
+        function playSound(type = 'click') {
+            if (!state.settings || !state.settings.audioEnabled) return;
+            
+            try {
+                if (!state.audio.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    state.audio.ctx = new AudioContext();
+                }
+                if (state.audio.ctx.state === 'suspended') state.audio.ctx.resume();
+
+                const ctx = state.audio.ctx;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+                
+                if (type === 'click') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'drag') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(450, now + 0.1);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'drop') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'success') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.setValueAtTime(600, now + 0.1); osc.frequency.setValueAtTime(800, now + 0.2);
+                    gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'achievement') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(440, now); 
+                    osc.frequency.setValueAtTime(554.37, now + 0.1); osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                }
+            } catch (e) { console.log("Audio API not ready or supported", e); }
+        }
+
+        function initApp() {
+            loadData();
+            updateSettingsUI();
+            if (state.player.name) navTo('home');
+            else { renderAvatars(); navTo('home'); }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state.player = parsed.player || state.player;
+                    state.progress = parsed.progress || state.progress;
+                    state.settings = parsed.settings || state.settings;
+                } catch(e) {}
+            }
+            if(state.settings.reducedMotion) document.body.classList.add('reduce-motion');
+            else document.body.classList.remove('reduce-motion');
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                player: state.player, progress: state.progress, settings: state.settings
+            }));
+        }
+
+        function resetDataWarning() {
+            closeSettings();
+            showModal("Reset Data", "Yakin ingin menghapus semua progress game kamu?", "warning", () => {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            });
+        }
+
+        function navTo(screenId) {
+            playSound();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+            
+            if (screenId === 'profile') renderAvatars();
+            if (screenId === 'map') buildMap();
+            if (screenId === 'level') initLevel();
+            if (screenId === 'achievements') renderAchievements();
+            if (screenId === 'leaderboard') renderLeaderboard();
+            if (screenId === 'admin') renderAdmin();
+        }
+
+        // --- MODALS & SETTINGS ---
+        
+        function openSettings() {
+            playSound();
+            document.getElementById('settings-modal').classList.remove('hidden');
+            updateSettingsUI();
+        }
+        function closeSettings() {
+            playSound();
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+        function toggleSound() {
+            state.settings.audioEnabled = !state.settings.audioEnabled;
+            saveData(); updateSettingsUI();
+            if(state.settings.audioEnabled) playSound('click');
+        }
+        function toggleMotion() {
+            playSound();
+            state.settings.reducedMotion = !state.settings.reducedMotion;
+            if(state.settings.reducedMotion) document.body.classList.add('reduce-motion');
+            else document.body.classList.remove('reduce-motion');
+            saveData(); updateSettingsUI();
+        }
+        function updateSettingsUI() {
+            // Audio icons
+            document.querySelectorAll('.btn-sound i').forEach(icon => {
+                icon.className = state.settings.audioEnabled ? 'fas fa-volume-up text-blue-400' : 'fas fa-volume-mute text-red-400';
+            });
+            // Motion Toggle switch
+            const knob = document.getElementById('motion-knob');
+            const btn = document.getElementById('btn-motion');
+            if (knob && btn) {
+                if(state.settings.reducedMotion) {
+                    btn.classList.replace('bg-slate-600', 'bg-blue-500');
+                    knob.style.transform = 'translateX(28px)';
+                } else {
+                    btn.classList.replace('bg-blue-500', 'bg-slate-600');
+                    knob.style.transform = 'translateX(0)';
+                }
+            }
+        }
+
+        let modalCallback = null;
+        function showModal(title, message, type = "info", callback = null) {
+            playSound();
+            const modal = document.getElementById('custom-modal');
+            const icon = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            
+            modalCallback = callback;
+            titleEl.innerText = title;
+            document.getElementById('modal-message').innerHTML = message; 
+
+            if(type === 'error') { icon.innerHTML = '💥'; titleEl.className = 'text-2xl title-font text-red-500 mb-2'; } 
+            else if (type === 'warning') { icon.innerHTML = '⚠️'; titleEl.className = 'text-2xl title-font text-yellow-500 mb-2'; } 
+            else if (type === 'success') { icon.innerHTML = '🏆'; titleEl.className = 'text-2xl title-font text-green-500 mb-2'; } 
+            else { icon.innerHTML = '🤖'; titleEl.className = 'text-2xl title-font text-blue-400 mb-2'; }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('modal-content').classList.remove('scale-90');
+                document.getElementById('modal-content').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            playSound();
+            const content = document.getElementById('modal-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-90');
+            setTimeout(() => {
+                document.getElementById('custom-modal').classList.add('hidden');
+                if (modalCallback) modalCallback();
+                modalCallback = null;
+            }, 200);
+        }
+
+        function triggerConfetti() {
+            if(state.settings && state.settings.reducedMotion) return; // Accessibility check
+            
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+            for(let i=0; i<40; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti-piece';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                conf.style.animationDelay = (Math.random() * 0.5) + 's';
+                document.body.appendChild(conf);
+                
+                // Cleanup to prevent memory leaks
+                setTimeout(() => conf.remove(), 4000);
+            }
+        }
+
+        // --- ACHIEVEMENTS & TOAST ---
+        
+        function showToast(title, icon) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<div class="text-3xl">${icon}</div><div><div class="text-xs font-bold opacity-80">Achievement Unlocked!</div><div class="font-bold">${title}</div></div>`;
+            container.appendChild(toast);
+            
+            playSound('achievement');
+
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function checkAchievements() {
+            const unlocked = state.progress.unlockedAchievements;
+            const completed = state.progress.completedLevels;
+            
+            const checkAndUnlock = (id, condition) => {
+                if (!unlocked.includes(id) && condition) {
+                    unlocked.push(id);
+                    const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+                    if(ach) showToast(ach.title, ach.icon);
+                }
+            };
+
+            checkAndUnlock('first_blood', completed.length >= 1);
+            checkAndUnlock('rookie', completed.length >= 5);
+            checkAndUnlock('no_hint', state.progress.noHintCount >= 5);
+            checkAndUnlock('explorer', LEVEL_DATA.filter(l => l.world === 1).every(l => completed.includes(l.id)));
+            checkAndUnlock('decision_master', LEVEL_DATA.filter(l => l.world === 3).every(l => completed.includes(l.id)));
+            checkAndUnlock('debugger', LEVEL_DATA.filter(l => l.world === 5).some(l => completed.includes(l.id)));
+            checkAndUnlock('master', completed.length >= 25);
+            
+            saveData(); syncDataToDB();
+        }
+
+        function renderAchievements() {
+            document.getElementById('achievements-total').innerText = ACHIEVEMENTS_DATA.length;
+            document.getElementById('achievements-count').innerText = state.progress.unlockedAchievements.length;
+            const list = document.getElementById('achievements-list');
+            list.innerHTML = '';
+            ACHIEVEMENTS_DATA.forEach(ach => {
+                const isUnlocked = state.progress.unlockedAchievements.includes(ach.id);
+                list.innerHTML += `
+                    <div class="bg-slate-800 p-4 rounded-xl flex items-center gap-4 border border-slate-700 ${isUnlocked ? 'opacity-100' : 'opacity-40 grayscale'}">
+                        <div class="text-4xl w-12 text-center">${isUnlocked ? ach.icon : '🔒'}</div>
+                        <div>
+                            <div class="font-bold text-blue-400">${ach.title}</div>
+                            <div class="text-xs text-slate-400 mt-1">${ach.desc}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- LEADERBOARD & ADMIN ---
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            let players = [
+                { name: 'Budi Setiawan', class: '8A', score: 2450, avatar: '👦' },
+                { name: 'Siti Aminah', class: '8B', score: 2100, avatar: '👧' },
+                { name: 'Cyber Ninja', class: '8C', score: 1800, avatar: '🤖' },
+                { name: 'Alok', class: '8A', score: 1550, avatar: '👨‍🚀' },
+            ];
+            if(state.player.name) {
+                players.push({
+                    name: state.player.name + ' (You)', class: state.player.class, 
+                    score: state.progress.totalScore, avatar: state.player.avatar, isPlayer: true
+                });
+            }
+            players.sort((a,b) => b.score - a.score);
+
+            list.innerHTML = '';
+            players.forEach((p, i) => {
+                let rankColor = i===0 ? 'text-yellow-400' : (i===1 ? 'text-gray-300' : (i===2 ? 'text-orange-400' : 'text-slate-400'));
+                list.innerHTML += `
+                    <div class="bg-slate-800 p-3 rounded-lg flex items-center justify-between ${p.isPlayer ? 'border-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border border-slate-700'}">
+                        <div class="flex items-center gap-3">
+                            <div class="font-bold text-lg w-6 text-center ${rankColor}">#${i+1}</div>
+                            <div class="text-3xl">${p.avatar}</div>
+                            <div>
+                                <div class="font-bold text-sm ${p.isPlayer ? 'text-blue-400' : 'text-white'}">${p.name}</div>
+                                <div class="text-xs text-slate-400">Kelas ${p.class}</div>
+                            </div>
+                        </div>
+                        <div class="font-mono text-green-400 font-bold">${p.score}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderAdmin() {
+            document.getElementById('admin-stat-name').innerText = state.player.name || '-';
+            document.getElementById('admin-stat-score').innerText = state.progress.totalScore || 0;
+            document.getElementById('admin-stat-levels').innerText = `${state.progress.completedLevels.length}/25`;
+            document.getElementById('admin-stat-ach').innerText = `${state.progress.unlockedAchievements.length}/${ACHIEVEMENTS_DATA.length}`;
+            
+            const tbody = document.getElementById('admin-progress-table');
+            tbody.innerHTML = '';
+            
+            if (state.progress.completedLevels.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-4 text-center text-slate-500">Belum ada misi yang diselesaikan.</td></tr>';
+            } else {
+                [...state.progress.completedLevels].sort((a,b) => a-b).forEach(lvlId => {
+                    const score = state.progress.scores[lvlId] || 0;
+                    const stars = state.progress.stars[lvlId] || 0;
+                    let starHtml = '';
+                    for(let i=0; i<3; i++) {
+                        starHtml += i < stars ? '<span class="text-yellow-400">★</span>' : '<span class="text-slate-600">☆</span>';
+                    }
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                            <td class="px-4 py-3 font-bold text-slate-300">Level ${lvlId}</td>
+                            <td class="px-4 py-3 text-green-400 font-mono">${score}</td>
+                            <td class="px-4 py-3 text-lg">${starHtml}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function exportDataCSV() {
+            playSound('click');
+            if (!state.player.name) {
+                showModal("Export Gagal", "Belum ada data pemain untuk diekspor.", "error"); return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "INFORMASI PEMAIN\nNama,Kelas,Avatar,Total Skor,Level Selesai,Total Achievement\n";
+            csvContent += `"${state.player.name}","${state.player.class}",${state.player.avatar},${state.progress.totalScore},${state.progress.completedLevels.length},${state.progress.unlockedAchievements.length}\n\n`;
+            csvContent += "DETAIL PROGRESS LEVEL\nLevel,Skor,Bintang\n";
+            
+            const completed = [...state.progress.completedLevels].sort((a,b) => a-b);
+            if (completed.length > 0) {
+                completed.forEach(lvlId => {
+                    csvContent += `Level ${lvlId},${state.progress.scores[lvlId] || 0},${state.progress.stars[lvlId] || 0}\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Nilai_Flowchart_${state.player.name.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showModal("Export Berhasil", "Data evaluasi telah diunduh.", "success");
+        }
+
+        function syncDataToDB(force = false) {
+            if(!CONFIG.API_URL) {
+                if(force) showModal('Sync Offline', 'URL Database kosong. Menggunakan penyimpanan lokal browser (Offline Mode).', 'info');
+                return;
+            }
+            fetch(CONFIG.API_URL, {
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'saveProgress', player: state.player, progress: state.progress })
+            }).then(() => {
+                if(force) showModal('Sync Success', 'Data berhasil dikirim ke server!', 'success');
+            }).catch(e => {
+                if(force) showModal('Sync Failed', 'Terjadi kesalahan jaringan.', 'error');
+            });
+        }
+
+        // --- PROFILE ---
+        function renderAvatars() {
+            const container = document.getElementById('avatar-selection');
+            container.innerHTML = '';
+            AVATARS.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.className = `text-4xl p-2 rounded-xl border-2 transition-all hover:bg-slate-700 ${state.player.avatar === emoji ? 'border-blue-500 bg-slate-700' : 'border-transparent'}`;
+                btn.innerText = emoji;
+                btn.onclick = () => { playSound(); state.player.avatar = emoji; renderAvatars(); };
+                container.appendChild(btn);
+            });
+        }
+        function saveProfile() {
+            const name = document.getElementById('input-name').value.trim();
+            const cls = document.getElementById('input-class').value.trim();
+            if (!name) { showModal("Data Tidak Lengkap", "Harap masukkan nama kamu terlebih dahulu."); return; }
+            state.player.name = name; state.player.class = cls;
+            saveData(); navTo('map');
+        }
+
+        // --- MAP ---
+        function buildMap() {
+            document.getElementById('map-player-name').innerText = state.player.name || 'Explorer';
+            document.getElementById('map-avatar').innerText = state.player.avatar || '👦';
+            document.getElementById('map-total-stars').innerText = Object.values(state.progress.stars).reduce((a,b)=>a+b, 0);
+
+            const mapNodesContainer = document.getElementById('map-nodes');
+            mapNodesContainer.innerHTML = '';
+            
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('class', 'absolute inset-0 w-full h-full pointer-events-none z-0');
+            svg.id = 'map-path-svg';
+            mapNodesContainer.appendChild(svg);
+
+            const worlds = [
+                { id: 1, title: "WORLD 1: HOME (Sequence)", levels: LEVEL_DATA.filter(l => l.world === 1) },
+                { id: 2, title: "WORLD 2: SCHOOL (Input/Output)", levels: LEVEL_DATA.filter(l => l.world === 2) },
+                { id: 3, title: "WORLD 3: WEATHER (Decision)", levels: LEVEL_DATA.filter(l => l.world === 3) },
+                { id: 4, title: "WORLD 4: DAILY LIFE (Kombinasi)", levels: LEVEL_DATA.filter(l => l.world === 4) },
+                { id: 5, title: "WORLD 5: ALGORITHM LAB (Debugging)", levels: LEVEL_DATA.filter(l => l.world === 5) },
+                { id: 6, title: "🔥 FINAL BOSS: SYSTEM CORE 🔥", levels: LEVEL_DATA.filter(l => l.world === 6) }
+            ];
+
+            worlds.forEach(world => {
+                if(world.levels.length === 0) return;
+                const wHeader = document.createElement('div');
+                wHeader.className = 'w-full text-center my-6 z-10';
+                if (world.id === 6) wHeader.innerHTML = `<h3 class="text-2xl title-font text-red-500 bg-red-900/30 inline-block px-6 py-2 rounded-full border border-red-500 animate-pulse">${world.title}</h3>`;
+                else wHeader.innerHTML = `<h3 class="text-xl title-font text-blue-400 bg-slate-900/80 inline-block px-4 py-1 rounded-full border border-slate-700 shadow-lg">${world.title}</h3>`;
+                mapNodesContainer.appendChild(wHeader);
+
+                world.levels.forEach((level) => {
+                    const isUnlocked = state.progress.unlockedLevels.includes(level.id);
+                    const isCompleted = state.progress.completedLevels.includes(level.id);
+                    const stars = state.progress.stars[level.id] || 0;
+
+                    const nodeWrapper = document.createElement('div');
+                    nodeWrapper.className = 'relative flex flex-col items-center group mb-4 z-10';
+                    
+                    const btn = document.createElement('button');
+                    btn.className = `map-node ${isCompleted ? 'completed' : (isUnlocked ? 'unlocked' : 'locked')}`;
+                    btn.innerHTML = isCompleted ? '<i class="fas fa-check"></i>' : (isUnlocked ? level.id : '<i class="fas fa-lock text-sm"></i>');
+                    
+                    if (isUnlocked) btn.onclick = () => { state.currentLevel = level; navTo('level'); };
+
+                    const label = document.createElement('div');
+                    label.className = `mt-2 text-sm font-bold ${isUnlocked ? 'text-white' : 'text-slate-500'}`;
+                    label.innerText = level.title;
+
+                    nodeWrapper.appendChild(btn); nodeWrapper.appendChild(label);
+
+                    if (isCompleted) {
+                        const starsDiv = document.createElement('div');
+                        starsDiv.className = 'stars-container text-yellow-400';
+                        let starsHTML = '';
+                        for(let i=0; i<3; i++) starsHTML += i < stars ? '<i class="fas fa-star drop-shadow"></i>' : '<i class="far fa-star text-slate-600"></i>';
+                        starsDiv.innerHTML = starsHTML; nodeWrapper.appendChild(starsDiv);
+                    }
+                    mapNodesContainer.appendChild(nodeWrapper);
+                });
+            });
+        }
+
+        // --- LEVEL & GAMEPLAY ---
+        
+        function initLevel() {
+            const level = state.currentLevel;
+            if(!level) return;
+
+            state.lives = 3; state.hintsUsed = 0; state.timer = 0; state.isSimulating = false;
+            state.dragState.activeCard = null; state.dragState.tapSelectedCard = null;
+            
+            updateLevelHUD(); startTimer();
+            document.getElementById('lvl-title').innerText = `LVL ${level.id}: ${level.title}`;
+            
+            showModal("Misi Baru", `<div class="mb-2"><span class="bg-blue-900/50 text-blue-300 px-2 py-1 rounded text-xs border border-blue-500/50"><i class="fas fa-book-open"></i> Konsep: ${level.concept || 'Algoritma'}</span></div><div class="font-bold text-white">${level.mission}</div>`, "info");
+
+            buildWorkspace(); buildInventory(); buildSimulationArea();
+        }
+
+        function updateLevelHUD() {
+            let livesHtml = '';
+            for(let i=0; i<3; i++) livesHtml += i < state.lives ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart text-slate-700"></i>';
+            document.getElementById('lvl-lives').innerHTML = livesHtml;
+            document.getElementById('lvl-score').innerText = "0";
+        }
+
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            const timerEl = document.getElementById('lvl-timer');
+            state.timerInterval = setInterval(() => {
+                state.timer++;
+                timerEl.innerText = `${Math.floor(state.timer / 60).toString().padStart(2, '0')}:${(state.timer % 60).toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function buildSimulationArea() {
+            const simArea = document.getElementById('sim-area');
+            simArea.innerHTML = '';
+            const level = state.currentLevel;
+            
+            if(level.simScenarioMsg) {
+                const msg = document.createElement('div');
+                msg.className = 'absolute top-2 right-4 text-xs text-yellow-400 font-bold bg-slate-800 px-2 py-1 rounded border border-slate-700 shadow';
+                msg.innerHTML = `<i class="fas fa-info-circle"></i> ${level.simScenarioMsg}`;
+                simArea.appendChild(msg);
+            }
+            if(!level.simProps) return;
+            level.simProps.forEach(prop => {
+                const el = document.createElement('div');
+                el.className = 'sim-prop absolute bottom-2'; el.style.left = prop.x;
+                el.innerText = prop.icon; el.id = `sim-prop-${prop.slot}`;
+                simArea.appendChild(el);
+            });
+            const char = document.createElement('div');
+            char.className = 'sim-character drop-shadow-lg'; char.innerText = state.player.avatar;
+            char.id = 'sim-char'; char.style.left = '5%';
+            simArea.appendChild(char);
+        }
+
+        function buildWorkspace() {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = '';
+            const level = state.currentLevel;
+            
+            if (level.template === 'linear') {
+                const totalSlots = Object.keys(level.correctMapping).length;
+                for(let i=0; i < totalSlots; i++) {
+                    container.appendChild(createSlot(`slot-${i}`));
+                    if (i < totalSlots - 1) {
+                        const conn = document.createElement('div');
+                        conn.className = 'connector-line mb-6'; container.appendChild(conn);
+                    }
+                }
+            } else if (level.template === 'branch_1') {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center w-full max-w-md mx-auto">
+                        <div id="slot-0-container" class="mb-6"></div>
+                        <div class="connector-line mb-6"></div>
+                        <div id="slot-1-container" class="mb-4"></div>
+                        <div class="flex w-full justify-center relative mt-2 mb-4">
+                            <div class="branch-line-h w-1/2 left-1/4"></div>
+                            <div class="flex flex-col items-center w-1/2 relative pt-4">
+                                <div class="branch-line-v h-4 absolute top-0"></div>
+                                <div class="text-xs text-green-400 font-bold mb-2 bg-slate-900 px-3 py-0.5 rounded-full border border-green-500/30 shadow-lg relative z-10">YA</div>
+                                <div id="slot-2-container" class="mb-4"></div>
+                            </div>
+                            <div class="flex flex-col items-center w-1/2 relative pt-4">
+                                <div class="branch-line-v h-4 absolute top-0"></div>
+                                <div class="text-xs text-red-400 font-bold mb-2 bg-slate-900 px-3 py-0.5 rounded-full border border-red-500/30 shadow-lg relative z-10">TIDAK</div>
+                                <div id="slot-3-container" class="mb-4"></div>
+                            </div>
+                        </div>
+                        <div class="flex w-full justify-center relative mb-6 h-6">
+                            <div class="branch-line-h w-1/2 left-1/4 bottom-0 top-auto"></div>
+                            <div class="branch-line-v h-6 absolute top-0 left-1/4"></div>
+                            <div class="branch-line-v h-6 absolute top-0 right-1/4"></div>
+                            <div class="branch-line-v h-6 absolute top-0 left-1/2 transform -translate-x-1/2"></div>
+                            <div class="connector-line absolute -bottom-6"></div>
+                        </div>
+                        <div id="slot-4-container" class="mt-4"></div>
+                    </div>
+                `;
+                ['0','1','2','3','4'].forEach(n => document.getElementById(`slot-${n}-container`).appendChild(createSlot(`slot-${n}`)));
+            }
+        }
+
+        function createSlot(id) {
+            const slot = document.createElement('div');
+            slot.className = 'workspace-slot'; slot.id = id;
+            slot.addEventListener('click', () => handleSlotTap(slot));
+            return slot;
+        }
+
+        function buildInventory() {
+            const container = document.getElementById('card-inventory');
+            container.innerHTML = '';
+            const level = state.currentLevel;
+            const shuffled = [...level.cards].sort(() => Math.random() - 0.5);
+            const initialMap = level.initialMapping || {};
+
+            shuffled.forEach(cardData => {
+                const card = createCardElement(cardData);
+                let placed = false;
+                for (const [sId, cId] of Object.entries(initialMap)) {
+                    if (cId === cardData.id) {
+                        const slot = document.getElementById(sId);
+                        if (slot) { slot.appendChild(card); placed = true; }
+                    }
+                }
+                if (!placed) container.appendChild(card);
+            });
+        }
+
+        function createCardElement(cardData) {
+            const el = document.createElement('div');
+            let shapeClass = 'shape-process';
+            if (cardData.type === 'start' || cardData.type === 'end') shapeClass = 'shape-start';
+            else if (cardData.type === 'io') shapeClass = 'shape-io';
+            else if (cardData.type === 'decision') shapeClass = 'shape-decision';
+
+            el.className = `fc-node ${shapeClass} select-none`;
+            el.id = `card-${cardData.id}`;
+            el.dataset.id = cardData.id; el.dataset.type = cardData.type;
+            
+            if(['process', 'io', 'decision'].includes(cardData.type)) el.innerHTML = `<span>${cardData.label}</span>`;
+            else el.innerText = cardData.label;
+
+            el.addEventListener('pointerdown', handlePointerDown);
+            el.addEventListener('click', (e) => { if(!el.classList.contains('was-dragged')) handleCardTap(el); });
+            return el;
+        }
+
+        // --- DRAG AND DROP ---
+        function handlePointerDown(e) {
+            if(state.isSimulating) return;
+            const card = e.currentTarget;
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            playSound('drag');
+            clearTapSelection();
+            card.setPointerCapture(e.pointerId);
+            state.dragState.activeCard = card;
+            card.classList.remove('was-dragged');
+            
+            const rect = card.getBoundingClientRect();
+            state.dragState.offsetX = e.clientX - rect.left - (rect.width / 2);
+            state.dragState.offsetY = e.clientY - rect.top - (rect.height / 2);
+
+            card.classList.add('dragging');
+            document.body.appendChild(card);
+            moveCard(e.clientX, e.clientY);
+
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+        }
+
+        function handlePointerMove(e) {
+            if (!state.dragState.activeCard) return;
+            const card = state.dragState.activeCard;
+            card.classList.add('was-dragged');
+            moveCard(e.clientX, e.clientY);
+            
+            const slots = document.querySelectorAll('.workspace-slot');
+            clearHighlights();
+            slots.forEach(slot => {
+                const rect = slot.getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    if (!slot.hasChildNodes()) slot.classList.add('highlight');
+                }
+            });
+        }
+
+        function handlePointerUp(e) {
+            if (!state.dragState.activeCard) return;
+            const card = state.dragState.activeCard;
+            
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            card.releasePointerCapture(e.pointerId);
+            
+            card.classList.remove('dragging');
+            card.style.position = ''; card.style.left = ''; card.style.top = ''; card.style.transform = '';
+
+            const slots = document.querySelectorAll('.workspace-slot');
+            let targetSlot = null;
+            for (let slot of slots) {
+                const rect = slot.getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    targetSlot = slot; break;
+                }
+            }
+            
+            if (targetSlot && !targetSlot.hasChildNodes()) {
+                targetSlot.appendChild(card); playSound('drop');
+            } else {
+                document.getElementById('card-inventory').appendChild(card);
+            }
+
+            clearHighlights(); state.dragState.activeCard = null;
+        }
+
+        function moveCard(x, y) {
+            const card = state.dragState.activeCard;
+            card.style.left = `${x - (card.offsetWidth/2)}px`;
+            card.style.top = `${y - (card.offsetHeight/2)}px`;
+        }
+
+        function handleCardTap(card) {
+            if(state.isSimulating) return;
+            playSound('drag'); clearTapSelection();
+            state.dragState.tapSelectedCard = card; card.classList.add('tap-selected');
+            document.querySelectorAll('.workspace-slot:empty').forEach(s => s.classList.add('highlight'));
+        }
+
+        function handleSlotTap(slot) {
+            if(state.isSimulating) return;
+            if (state.dragState.tapSelectedCard && !slot.hasChildNodes()) {
+                slot.appendChild(state.dragState.tapSelectedCard);
+                playSound('drop'); clearTapSelection();
+            }
+        }
+
+        function clearTapSelection() {
+            if(state.dragState.tapSelectedCard) state.dragState.tapSelectedCard.classList.remove('tap-selected');
+            state.dragState.tapSelectedCard = null; clearHighlights();
+        }
+        function clearHighlights() { document.querySelectorAll('.workspace-slot').forEach(s => s.classList.remove('highlight')); }
+        function toggleCardsMobile() { document.getElementById('card-inventory').classList.toggle('hidden'); }
+        
+        function resetWorkspace() {
+            if(state.isSimulating) return;
+            showModal("Reset", "Kembalikan posisi kartu?", "warning", () => {
+                const inv = document.getElementById('card-inventory');
+                const level = state.currentLevel;
+                const initialMap = level.initialMapping || {};
+
+                document.querySelectorAll('.workspace-slot .fc-node').forEach(card => {
+                    let targetSlotId = null;
+                    for (const [sId, cId] of Object.entries(initialMap)) { if (cId === card.dataset.id) targetSlotId = sId; }
+                    if (targetSlotId) document.getElementById(targetSlotId).appendChild(card); else inv.appendChild(card);
+                });
+            });
+        }
+
+        function useHint() {
+            if(state.isSimulating) return;
+            const level = state.currentLevel;
+            if(state.hintsUsed >= level.hints.length) { showModal("Hint Habis", "Kamu sudah menggunakan semua hint untuk level ini.", "info"); return; }
+            showModal(`Hint ${state.hintsUsed + 1}`, `💡 ${level.hints[state.hintsUsed]}`, "info");
+            state.hintsUsed++;
+        }
+
+        // --- VALIDATION & SIMULATION ENGINE ---
+        async function runAlgorithm() {
+            if(state.isSimulating) return;
+            const level = state.currentLevel;
+            const slots = document.querySelectorAll('.workspace-slot');
+            
+            let allFilled = true;
+            slots.forEach(s => { if (!s.firstChild) allFilled = false; });
+            if (!allFilled) { showModal("Belum Lengkap", "Isi semua slot flowchart sebelum menjalankan algoritma.", "warning"); return; }
+
+            state.isSimulating = true;
+            const btnRun = document.getElementById('btn-run');
+            btnRun.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SIMULATING...';
+            btnRun.classList.add('opacity-75', 'pointer-events-none');
+            
+            const char = document.getElementById('sim-char');
+            char.style.left = '5%'; char.innerText = state.player.avatar;
+            
+            // 1. Logic Validation
+            let isCorrect = true, errorMsg = "", errorSlotId = null;
+
+            for (const [slotId, expectedCardId] of Object.entries(level.correctMapping)) {
+                const placedCardId = document.getElementById(slotId).firstChild.dataset.id;
+                
+                if (placedCardId !== expectedCardId) {
+                    isCorrect = false; errorSlotId = slotId;
+                    const wrongCardData = level.cards.find(c => c.id === placedCardId);
+                    
+                    if (wrongCardData.type === 'start') errorMsg = "💡 <b>Pedagogi:</b> Simbol START (Oval) selalu berada di urutan paling awal untuk memulai algoritma.";
+                    else if (wrongCardData.type === 'end') errorMsg = "💡 <b>Pedagogi:</b> Simbol END (Oval) selalu berada di urutan paling akhir untuk menutup algoritma.";
+                    else if (level.template === 'branch_1' && slotId === 'slot-1' && wrongCardData.type !== 'decision') errorMsg = "💡 <b>Pedagogi:</b> Cabang logika (Ya/Tidak) memerlukan kondisi pertanyaan. Gunakan simbol DECISION (Belah Ketupat) di posisi ini.";
+                    else if (wrongCardData.type === 'decision' && level.template === 'linear') errorMsg = "💡 <b>Pedagogi:</b> Simbol Decision (Belah Ketupat) digunakan untuk mengecek kondisi bersyarat, bukan aksi biasa.";
+                    else if (wrongCardData.type === 'io') errorMsg = `💡 <b>Pedagogi:</b> Langkah "${wrongCardData.label}" adalah Input/Output (Jajar Genjang). Letakkan tepat di momen penerimaan/pengeluaran objek.`;
+                    else errorMsg = `💡 <b>Logika Error:</b> Langkah "${wrongCardData.label}" belum tepat di posisi ini. Periksa kembali urutan sebab-akibatnya.`;
+                    break;
+                }
+            }
+
+            // 2. Visual Simulation
+            for (let i = 0; i < level.simPath.length; i++) {
+                const slotId = level.simPath[i];
+                const slot = document.getElementById(slotId);
+                
+                slot.firstChild.classList.add('border-yellow-400', 'box-shadow-yellow-400', 'scale-105');
+                const prop = level.simProps.find(p => p.slot === slotId);
+                if (prop) {
+                    char.style.left = prop.x;
+                    if(!state.settings.reducedMotion) {
+                        char.classList.add('animate-shake');
+                        setTimeout(()=>char.classList.remove('animate-shake'), 400);
+                    }
+                    const propEl = document.getElementById(`sim-prop-${slotId}`);
+                    if(propEl) propEl.classList.add('active');
+                }
+                
+                await new Promise(r => setTimeout(r, 800));
+                slot.firstChild.classList.remove('border-yellow-400', 'box-shadow-yellow-400', 'scale-105');
+
+                if (!isCorrect && slotId === errorSlotId) { handleError(errorMsg); return; }
+            }
+
+            if (!isCorrect) { handleError(errorMsg); return; }
+            handleSuccess();
+        }
+
+        function handleError(msg) {
+            state.lives--; updateLevelHUD(); state.isSimulating = false; resetRunButton(); playSound('error');
+            const char = document.getElementById('sim-char');
+            char.innerText = '😵';
+            if(!state.settings.reducedMotion) char.classList.add('animate-shake');
+
+            if (state.lives <= 0) {
+                showModal("Mission Failed 💥", "Kamu kehabisan nyawa. Coba lagi dari awal!", "error", () => initLevel());
+            } else {
+                showModal("⚠️ Algorithm Error", msg, "warning", () => char.innerText = state.player.avatar);
+            }
+        }
+
+        function handleSuccess() {
+            clearInterval(state.timerInterval);
+            state.isSimulating = false; resetRunButton(); playSound('success');
+            
+            const char = document.getElementById('sim-char');
+            char.innerText = '🎉';
+            if(!state.settings.reducedMotion) char.classList.add('animate-pop');
+
+            let finalScore = Math.max(0, 100 + (state.timer < 30 ? 30 : (state.timer < 60 ? 10 : 0)) + (state.lives === 3 ? 20 : 0) + (state.hintsUsed * -10));
+            let stars = state.lives === 3 && state.hintsUsed === 0 ? 3 : (state.lives >= 2 ? 2 : 1);
+
+            if(state.hintsUsed === 0) state.progress.noHintCount = (state.progress.noHintCount || 0) + 1;
+
+            const lvlId = state.currentLevel.id;
+            if(!state.progress.scores[lvlId] || finalScore > state.progress.scores[lvlId]) state.progress.scores[lvlId] = finalScore;
+            if(!state.progress.stars[lvlId] || stars > state.progress.stars[lvlId]) state.progress.stars[lvlId] = stars;
+            if (!state.progress.completedLevels.includes(lvlId)) state.progress.completedLevels.push(lvlId);
+            
+            const nextLevel = LEVEL_DATA.find(l => l.id === lvlId + 1);
+            if (nextLevel && !state.progress.unlockedLevels.includes(nextLevel.id)) state.progress.unlockedLevels.push(nextLevel.id);
+            state.progress.totalScore = Object.values(state.progress.scores).reduce((a,b)=>a+b, 0);
+            
+            saveData(); checkAchievements(); triggerConfetti();
+
+            let starsHtml = `<div class="text-3xl text-yellow-400 mb-2">`;
+            for(let i=0; i<3; i++) starsHtml += i < stars ? '<i class="fas fa-star animate-pop drop-shadow"></i>' : '<i class="far fa-star text-gray-500"></i>';
+            starsHtml += `</div>`;
+            
+            setTimeout(() => showModal("Mission Complete! 🚀", starsHtml + `<div class="text-left bg-slate-800 p-4 rounded-lg mb-4 text-sm font-mono border border-slate-700"><div>Base Score: 100</div><div class="text-green-400">Time/Live Bonus: +${finalScore - 100 - (state.hintsUsed * -10)}</div>${state.hintsUsed > 0 ? `<div class="text-red-400">Hint Penalty: ${state.hintsUsed * -10}</div>` : ''}<div class="border-t border-slate-600 mt-2 pt-2 font-bold text-lg text-blue-400">Total: ${finalScore}</div></div>`, "success", () => navTo('map')), 1000);
+        }
+
+        function resetRunButton() {
+            const btn = document.getElementById('btn-run');
+            btn.innerHTML = '<i class="fas fa-play"></i> RUN ALGORITHM';
+            btn.classList.remove('opacity-75', 'pointer-events-none');
+        }
+
+        function confirmExitLevel() {
+            if(state.isSimulating) return;
+            showModal("Keluar Level?", "Progress susunan flowchart kamu di level ini akan hilang.", "warning", () => {
+                clearInterval(state.timerInterval); navTo('map');
+            });
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
